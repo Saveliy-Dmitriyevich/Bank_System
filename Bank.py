@@ -3,7 +3,9 @@ class Bank:
         pass
 
 class Client:
-    pass
+    def __init__(self):
+        pass
+
 
 class Account:
     pass
