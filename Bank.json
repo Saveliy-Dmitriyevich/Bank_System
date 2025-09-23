@@ -1,0 +1,18 @@
+[
+    {
+        "name": "Saveliy",
+        "second_name": "Dubin",
+        "DOB": "17-11-2005",
+        "phone_number": "+375291095568",
+        "email_login": "neron4110@gmail.com",
+        "password": "41104110"
+    },
+    {
+        "name": "Semen",
+        "second_name": "Syrob",
+        "DOB": "07-07-2005",
+        "phone_number": "+375291092525",
+        "email_login": "cemix@gmail.com",
+        "password": "lahyna2"
+    }
+]
