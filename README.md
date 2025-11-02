@@ -8,3 +8,6 @@ First name, Last name, Date of birth, Phone number, Email, Password.
 Field validation added:
 Client data is saved to a JSON file (Bank.json).
 Login via email and password implemented.
+
+Day 03 After big rest, i continue my journey
+Today i finally did system of validation, and Tomorrow i will continue work with OOP
