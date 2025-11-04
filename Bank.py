@@ -1,23 +1,132 @@
 import json
 import os
 from datetime import datetime
+from forex_python.converter import CurrencyRates, CurrencyCodes
+
+
 
 
 class Bank:
     def __init__(self):
-        pass
+        def __init__(self):
+            self.clients = []
+            self.accounts = []
+
+        def add_client(self, client):
+            self.clients.append(client)
+
+        def add_account(self, account):
+            self.accounts.append(account)
+
+        def find_client_by_email(self, email):
+            for c in self.clients:
+                if c.email_login == email:
+                    return c
+            return None
+
+        def find_accounts_by_email(self, email):
+            return [acc for acc in self.accounts if acc.owner_email == email]
 
 class Client:
-    def __init__(self, name, second_name, DOB, phone_number, email_login, password):
+    def __init__(self, name, second_name, DOB, phone_number, email_login, password, uni_number):
         self.name = name
         self.second_name = second_name
         self.DOB = DOB
         self.phone_number = phone_number
         self.email_login = email_login
         self.password = password
+        self.uni_number = uni_number
+        self.accounts = []  # список номеров счетов
+
+    def add_account(self, account):
+        self.accounts.append(account.account_number)
 
 class Account:
-    pass
+    def __init__(self, account_number, owner_email, currency, balance=0.0):
+        self.account_number = account_number
+        self.owner_email = owner_email
+        self.balance = float(balance)
+        self.currency = currency
+        self.history = []
+
+    def show_balance(self, currency="BYN"):
+        c = CurrencyRates()
+        if currency == "BYN":
+            print(f"Balance: {self.balance:.2f} BYN")
+        else:
+            try:
+                rate = c.get_rate("BYN", currency)
+                converted = self.balance * rate
+                print(f"Balance: {converted:.2f} {currency}")
+            except Exception as e:
+                print(f"Error converting balance: {e}")
+
+    def deposit(self, amount, currency):
+        c = CurrencyRates()
+        time_now = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+
+        if currency != 'BYN':
+            try:
+                rate_to_byn = c.get_rate(currency, 'BYN')
+                amount_byn = amount * rate_to_byn
+            except Exception as e:
+                print(f"Ошибка для {currency}: {e}")
+                return
+        else:
+            amount_byn = amount
+
+        self.balance += amount_byn
+        self.history.append(f"{time_now}, Deposited {amount} {currency} ({amount_byn:.2f} BYN)")
+        print("Deposit successful!")
+
+    def withdraw(self, amount, currency):
+        c = CurrencyRates()
+        time_now = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+
+        if currency != 'BYN':
+            try:
+                rate_to_byn = c.get_rate(currency, 'BYN')
+                amount_byn = amount * rate_to_byn
+            except Exception as e:
+                print(f"Ошибка для {currency}: {e}")
+                return
+        else:
+            amount_byn = amount
+
+        if amount_byn > self.balance:
+            print("Not enough funds.")
+            return
+
+        self.balance -= amount_byn
+        self.history.append(f"{time_now}, You withdrew {amount} {currency} ({amount_byn:.2f} BYN)")
+        print("Withdrawal successful!")
+
+    def belarus_currency_rates(self):
+        c = CurrencyRates()
+        cc = CurrencyCodes()
+
+        print("=== КУРСЫ БЕЛОРУССКОГО РУБЛЯ ===")
+        print(f"Валюта: {cc.get_currency_name('BYN')} ({cc.get_symbol('BYN')})")
+        print(f"Актуально на: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+        print()
+
+        # Основные курсы
+        currencies = ['USD', 'EUR', 'RUB', 'PLN', 'UAH']
+
+        for curr in currencies:
+            try:
+                # Иностранная валюта к BYN
+                rate_to_byn = c.get_rate(curr, 'BYN')
+                # BYN к иностранной валюте
+                rate_from_byn = c.get_rate('BYN', curr)
+
+                print(f"1 {curr} = {rate_to_byn:.4f} BYN")
+                print(f"1 BYN = {rate_from_byn:.4f} {curr}")
+                print("-" * 30)
+
+            except Exception as e:
+                print(f"Ошибка для {curr}: {e}")
+
 
 def save_client(client):
     filename = "Bank.json"
@@ -87,6 +196,12 @@ def validate_email_login(email_login):
     top_level_domain = domain.split(".")[-1].lower()
     if top_level_domain not in valid_domains:
         return (False, 'Your domain does not exist')
+    with open("Bank.json", "r") as file:
+        clients = json.load(file)
+
+        for client in clients:
+            if client["email_login"] == email_login:
+                return (False, 'This email already exists')
     return True
 
 def validate_password(password, name, second_name, DOB, phone_number, email_login):
@@ -142,6 +257,11 @@ def validate_password(password, name, second_name, DOB, phone_number, email_logi
         print("\n".join(feedback))
     return (valid, "Password check complete" if valid else "Password does not meet requirements")
 
+def personal_account():
+    pass
+
+#___________________________________________________________________________________________________________________________________________________________________________________
+
 print("Hello, it is our Bank system. Do you want to register or login?")
 choice = input().strip().lower()
 
@@ -156,8 +276,14 @@ if choice == "register":
         lambda p: validate_password(p, name, second_name, DOB, phone_number, email_login),
         "Invalid password"
     )
+    try:
+        with open("Bank.json", "r") as file:
+            clients = json.load(file)
+            uni_number = len(clients) + 1
+    except (FileNotFoundError, json.JSONDecodeError):
+        clients = []
 
-    Client_new = Client(name, second_name, DOB, phone_number, email_login, password)
+    Client_new = Client(name, second_name, DOB, phone_number, email_login, password,uni_number)
 
     save_client(Client_new)
     print("You are registered! Welcome to Bank System!")
@@ -176,7 +302,7 @@ elif choice == "login":
         if client["email_login"] == email_login and client["password"] == password:
             print(f"Welcome, {client['name']} {client['second_name']}!")
             found = True
-            break
+
 
     if not found:
         print("Invalid login or password!")
