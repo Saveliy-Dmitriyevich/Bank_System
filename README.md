@@ -11,3 +11,6 @@ Login via email and password implemented.
 
 Day 03 After big rest, i continue my journey
 Today i finally did system of validation, and Tomorrow i will continue work with OOP
+
+Day 04 Today I worked on the "Accounts" class, adding account verification, account replenishment, and account withdrawal functions, all in different currencies.
+I'm continuing to improve validation and starting work on linking clients and their accounts.
