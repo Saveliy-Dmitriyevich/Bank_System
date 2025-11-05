@@ -4,28 +4,62 @@ from datetime import datetime
 from forex_python.converter import CurrencyRates, CurrencyCodes
 
 
-
-
 class Bank:
-    def __init__(self):
-        def __init__(self):
-            self.clients = []
-            self.accounts = []
+    def __init__(self, clients_file="Bank.json", accounts_file="Account.json"):
+        self.clients_file = clients_file
+        self.accounts_file = accounts_file
+        self.clients = self.load_clients()
+        self.accounts = self.load_accounts()
 
-        def add_client(self, client):
-            self.clients.append(client)
+    def load_clients(self):
+        if not os.path.exists(self.clients_file):
+            return []
+        try:
+            with open(self.clients_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return []
 
-        def add_account(self, account):
-            self.accounts.append(account)
+    def load_accounts(self):  #делает переменную
+        if not os.path.exists(self.accounts_file):
+            return []
+        try:
+            with open(self.accounts_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return []
 
-        def find_client_by_email(self, email):
-            for c in self.clients:
-                if c.email_login == email:
-                    return c
-            return None
+    def save_client(self, client):
+        clients = self.load_clients()
+        clients.append(client.__dict__)
+        with open(self.clients_file, "w", encoding="utf-8") as f:
+            json.dump(clients, f, indent=4, ensure_ascii=False)
 
-        def find_accounts_by_email(self, email):
-            return [acc for acc in self.accounts if acc.owner_email == email]
+    def save_account(self, account):
+        accounts = self.load_accounts()
+        accounts.append(account.__dict__)
+        with open(self.accounts_file, "w", encoding="utf-8") as f:
+            json.dump(accounts, f, indent=4, ensure_ascii=False)
+
+    def find_client_by_email(self, email):
+        for c in self.clients:
+            if c["email_login"] == email:
+                return c
+        return None
+
+    def count_accounts_by_email(self, email):
+        result = 0
+        for acc in self.accounts:
+            if acc["owner_email"] == email:
+                result += 1
+        return result
+
+    def find_accounts_by_email(self, email):
+        result = []
+        for acc in self.accounts:
+            if acc["owner_email"] == email:
+                result.append(acc)
+        return result
 
 class Client:
     def __init__(self, name, second_name, DOB, phone_number, email_login, password, uni_number):
@@ -142,6 +176,8 @@ def save_client(client):
     clients.append(client.__dict__)
     with open(filename, "w") as file:
         json.dump(clients, file, indent=4)
+
+# ====================== ВАЛИДАЦИЯ ======================
 
 def input_with_validation(prompt, validation_func, error_message):
     while True:
@@ -260,7 +296,8 @@ def validate_password(password, name, second_name, DOB, phone_number, email_logi
 def personal_account():
     pass
 
-#___________________________________________________________________________________________________________________________________________________________________________________
+# ====================== ОСНОВНАЯ ЛОГИКА ======================
+bank = Bank()
 
 print("Hello, it is our Bank system. Do you want to register or login?")
 choice = input().strip().lower()
@@ -291,18 +328,58 @@ elif choice == "login":
     email_login = input("Enter your Email: ")
     password = input("Enter your Password: ")
 
-    try:
-        with open("Bank.json", "r") as file:
-            clients = json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        clients = []
+    client = bank.find_client_by_email(email_login)
+    if client  and client["password"] == password:
 
-    found = False
-    for client in clients:
-        if client["email_login"] == email_login and client["password"] == password:
-            print(f"Welcome, {client['name']} {client['second_name']}!")
-            found = True
+        print(f"Welcome, {client['name']} {client['second_name']}!")
+
+        while True:
+            print("\n--- Account Menu ---")
+            print("1. Show my accounts")
+            print("2. Create new account")
+            print("3. Exit")
+            bank.accounts = bank.load_accounts()
+            ch = input("Choose: ")
+
+            if ch == "1":
+                accounts = bank.find_accounts_by_email(email_login)
+                if not accounts:
+                    print("You have no accounts.")
+                else:
+                    for acc in accounts:
+                        print(f"• {acc['account_number']} | {acc['currency']} | {acc['balance']:.2f} {acc['currency']}")
+
+            elif ch == "2":
+                if bank.count_accounts_by_email(email_login) == 3:
+                    print('You have created all the accounts')
+                    continue
+                else:
+                    currency = input("Enter currency (BYN/USD/EUR): ").upper()
+
+                    if currency.upper() not in ["BYN", "USD", "EUR"]:
+                        print("Invalid currency.")
+                    else:
+                        with open("Account.json", "r") as file:
+                            uni_account = json.load(file)
+                            account_exists = False
+                            for acc in uni_account:
+                                if acc["owner_email"] == email_login and acc["currency"] == currency:
+                                    print('This account is already registered.')
+                                    account_exists = True
+                                    break
+
+                            if not account_exists:
+                                acc_number = len(uni_account) + 1
+                                new_acc = Account(acc_number, email_login, currency, 0.0)
+                                bank.save_account(new_acc)
+                                print("✅ Account created successfully!")
 
 
-    if not found:
-        print("Invalid login or password!")
+            elif ch == "3":
+                print("Goodbye!")
+                break
+            else:
+                print("Invalid option!")
+
+    else:
+        print("❌ Invalid login or password.")
