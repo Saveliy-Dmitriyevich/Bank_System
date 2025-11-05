@@ -14,3 +14,5 @@ Today i finally did system of validation, and Tomorrow i will continue work with
 
 Day 04 Today I worked on the "Accounts" class, adding account verification, account replenishment, and account withdrawal functions, all in different currencies.
 I'm continuing to improve validation and starting work on linking clients and their accounts.
+
+Day 05 I worked on the Bank class and the main logic of the program, now it works.
