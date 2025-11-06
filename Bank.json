@@ -1,18 +1,32 @@
 [
     {
-        "name": "Saveliy",
+        "name": "Sava",
         "second_name": "Dubin",
         "DOB": "17-11-2005",
         "phone_number": "+375291095568",
         "email_login": "neron4110@gmail.com",
-        "password": "41104110"
+        "password": "41104110Neron!",
+        "uni_number": 1,
+        "accounts": []
+    },
+    {
+        "name": "maga",
+        "second_name": "magomed",
+        "DOB": "20-12-2000",
+        "phone_number": "+375297523354",
+        "email_login": "loh@gmail.com",
+        "password": "41104110Neron!",
+        "uni_number": 2,
+        "accounts": []
     },
     {
         "name": "Semen",
-        "second_name": "Syrob",
+        "second_name": "Syrov",
         "DOB": "07-07-2005",
-        "phone_number": "+375291092525",
-        "email_login": "cemix@gmail.com",
-        "password": "lahyna2"
+        "phone_number": "+375292525109",
+        "email_login": "cemix07@gmail.com",
+        "password": "1919191919loh!L",
+        "uni_number": 3,
+        "accounts": []
     }
 ]

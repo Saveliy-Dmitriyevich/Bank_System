@@ -1,0 +1,65 @@
+[
+    {
+        "account_number": 1,
+        "owner_email": "neron4110@gmail.com",
+        "balance": 0.0,
+        "currency": "BYN",
+        "history": []
+    },
+    {
+        "account_number": 2,
+        "owner_email": "neron4110@gmail.com",
+        "balance": 0.0,
+        "currency": "USD",
+        "history": []
+    },
+    {
+        "account_number": 3,
+        "owner_email": "neron4110@gmail.com",
+        "balance": 0.0,
+        "currency": "EUR",
+        "history": []
+    },
+    {
+        "account_number": 4,
+        "owner_email": "loh@gmail.com",
+        "balance": 0.0,
+        "currency": "BYN",
+        "history": []
+    },
+    {
+        "account_number": 5,
+        "owner_email": "loh@gmail.com",
+        "balance": 0.0,
+        "currency": "USD",
+        "history": []
+    },
+    {
+        "account_number": 6,
+        "owner_email": "loh@gmail.com",
+        "balance": 0.0,
+        "currency": "EUR",
+        "history": []
+    },
+    {
+        "account_number": 7,
+        "owner_email": "cemix07@gmail.com",
+        "balance": 0.0,
+        "currency": "USD",
+        "history": []
+    },
+    {
+        "account_number": 8,
+        "owner_email": "cemix07@gmail.com",
+        "balance": 0.0,
+        "currency": "EUR",
+        "history": []
+    },
+    {
+        "account_number": 9,
+        "owner_email": "cemix07@gmail.com",
+        "balance": 0.0,
+        "currency": "BYN",
+        "history": []
+    }
+]

@@ -4,6 +4,7 @@ from datetime import datetime
 from forex_python.converter import CurrencyRates, CurrencyCodes
 
 
+
 class Bank:
     def __init__(self, clients_file="Bank.json", accounts_file="Account.json"):
         self.clients_file = clients_file
@@ -337,7 +338,10 @@ elif choice == "login":
             print("\n--- Account Menu ---")
             print("1. Show my accounts")
             print("2. Create new account")
-            print("3. Exit")
+            print("3. Account replenishment")
+            print("4. Withdraw money")
+            print("5. Exchange rates")
+            print("6. Exit")
             bank.accounts = bank.load_accounts()
             ch = input("Choose: ")
 
@@ -375,7 +379,18 @@ elif choice == "login":
                                 print("✅ Account created successfully!")
 
 
-            elif ch == "3":
+
+
+            elif ch == "3": # Пополнение счета
+                pass
+
+            elif ch == "4": # Снять гроши
+                pass
+
+            elif ch == "5": # Курсы валют
+                pass
+
+            elif ch == "6":
                 print("Goodbye!")
                 break
             else:
