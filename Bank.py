@@ -387,7 +387,7 @@ elif choice == "login":
             elif ch == "4": # Снять гроши
                 pass
 
-            elif ch == "5": # Курсы валют
+            elif ch == "5": # Курсы валют в БУН
                 pass
 
             elif ch == "6":
