@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 from forex_python.converter import CurrencyRates, CurrencyCodes
-
+import random
 
 
 class Bank:
@@ -61,6 +61,16 @@ class Bank:
             if acc["owner_email"] == email:
                 result.append(acc)
         return result
+
+    def find_account_by_account_number(self, acc_num):
+        result = []
+        for acc in self.accounts:
+            if acc['account_number'] == acc_num:
+                result.append(acc)
+        if len(result) == 0:
+            return None
+        else:
+            return result
 
 class Client:
     def __init__(self, name, second_name, DOB, phone_number, email_login, password, uni_number):
@@ -162,6 +172,22 @@ class Account:
             except Exception as e:
                 print(f"Ошибка для {curr}: {e}")
 
+def uni_number_generation():
+    return random.randint(1000000, 9999999)
+
+def validation_uni_number(clients, uni_number_json):
+    existing_numbers = set()
+    for client in clients:
+        if uni_number_json in client:
+            existing_numbers.add(client[uni_number_json])
+
+    while True:
+        new_number = uni_number_generation()
+        if new_number not in existing_numbers:
+            uni_number = new_number
+            break
+
+    return uni_number
 
 def save_client(client):
     filename = "Bank.json"
@@ -297,6 +323,14 @@ def validate_password(password, name, second_name, DOB, phone_number, email_logi
 def personal_account():
     pass
 
+def Show_my_accounts():
+    accounts = bank.find_accounts_by_email(email_login)
+    if not accounts:
+        print("You have no accounts.")
+    else:
+        for acc in accounts:
+            print(f"• {acc['account_number']} | {acc['currency']} | {acc['balance']:.2f} {acc['currency']}")
+
 # ====================== ОСНОВНАЯ ЛОГИКА ======================
 bank = Bank()
 
@@ -314,12 +348,10 @@ if choice == "register":
         lambda p: validate_password(p, name, second_name, DOB, phone_number, email_login),
         "Invalid password"
     )
-    try:
-        with open("Bank.json", "r") as file:
-            clients = json.load(file)
-            uni_number = len(clients) + 1
-    except (FileNotFoundError, json.JSONDecodeError):
-        clients = []
+    clients = bank.clients
+    uni_number_json = 'uni_number'
+    uni_number = validation_uni_number(clients, uni_number_json)
+
 
     Client_new = Client(name, second_name, DOB, phone_number, email_login, password,uni_number)
 
@@ -335,7 +367,7 @@ elif choice == "login":
         print(f"Welcome, {client['name']} {client['second_name']}!")
 
         while True:
-            print("\n--- Account Menu ---")
+            print("\n\n\n\n\n\n\n--- Account Menu ---")
             print("1. Show my accounts")
             print("2. Create new account")
             print("3. Account replenishment")
@@ -343,15 +375,11 @@ elif choice == "login":
             print("5. Exchange rates")
             print("6. Exit")
             bank.accounts = bank.load_accounts()
+            bank.clients = bank.load_clients()
             ch = input("Choose: ")
 
             if ch == "1":
-                accounts = bank.find_accounts_by_email(email_login)
-                if not accounts:
-                    print("You have no accounts.")
-                else:
-                    for acc in accounts:
-                        print(f"• {acc['account_number']} | {acc['currency']} | {acc['balance']:.2f} {acc['currency']}")
+                Show_my_accounts()
 
             elif ch == "2":
                 if bank.count_accounts_by_email(email_login) == 3:
@@ -363,26 +391,37 @@ elif choice == "login":
                     if currency.upper() not in ["BYN", "USD", "EUR"]:
                         print("Invalid currency.")
                     else:
-                        with open("Account.json", "r") as file:
-                            uni_account = json.load(file)
-                            account_exists = False
-                            for acc in uni_account:
-                                if acc["owner_email"] == email_login and acc["currency"] == currency:
-                                    print('This account is already registered.')
-                                    account_exists = True
-                                    break
+                        uni_account = bank.accounts
+                        account_exists = False
+                        for acc in bank.accounts:
+                            if acc["owner_email"] == email_login and acc["currency"] == currency:
+                                print('This account is already registered.')
+                                account_exists = True
+                                break
 
-                            if not account_exists:
-                                acc_number = len(uni_account) + 1
-                                new_acc = Account(acc_number, email_login, currency, 0.0)
-                                bank.save_account(new_acc)
-                                print("✅ Account created successfully!")
-
-
+                        if not account_exists:
+                            account_number = 'account_number'
+                            acc_number = validation_uni_number(uni_account, account_number)
+                            new_acc = Account(acc_number, email_login, currency, 0.0)
+                            bank.save_account(new_acc)
+                            print("✅ Account created successfully!")
 
 
-            elif ch == "3": # Пополнение счета
-                pass
+            elif ch == "3": # Пополнение счета res[0]['balance']
+                Show_my_accounts()
+                uni_account = bank.accounts
+                uni_client = bank.clients
+                uni_number = int(input('Which account do you want to top up? '))
+                currency = input("Enter currency (BYN/USD/EUR): ").upper()
+                sum = int(input("Enter your sum: "))
+                res = bank.find_account_by_account_number(uni_number)
+                if res == None:
+                    print("<UNK> Account does not exist.")
+                    continue
+                else:
+                    pass
+                    # Account.deposit(sum, currency)
+
 
             elif ch == "4": # Снять гроши
                 pass
