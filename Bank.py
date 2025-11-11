@@ -1,7 +1,8 @@
 import json
 import os
 from datetime import datetime
-from forex_python.converter import CurrencyRates, CurrencyCodes
+import requests
+from forex_python.converter import CurrencyRates
 import random
 
 
@@ -62,15 +63,26 @@ class Bank:
                 result.append(acc)
         return result
 
-    def find_account_by_account_number(self, acc_num):
-        result = []
+    def find_account_by_account_number(self, account_number):
+        """Поиск аккаунта по номеру счета"""
         for acc in self.accounts:
-            if acc['account_number'] == acc_num:
-                result.append(acc)
-        if len(result) == 0:
-            return None
-        else:
-            return result
+            if acc["account_number"] == account_number:
+                return acc
+        return None
+
+    def update_account_balance(self, account_number, new_balance, new_history):
+
+        for acc in self.accounts:
+            if acc["account_number"] == account_number:
+                acc["balance"] = new_balance
+                if "history" in acc:
+                    acc["history"].extend(new_history)
+                else:
+                    acc["history"] = new_history
+                break
+        with open(self.accounts_file, "w", encoding="utf-8") as f:
+            json.dump(self.accounts, f, indent=4, ensure_ascii=False)
+
 
 class Client:
     def __init__(self, name, second_name, DOB, phone_number, email_login, password, uni_number):
@@ -94,83 +106,91 @@ class Account:
         self.currency = currency
         self.history = []
 
-    def show_balance(self, currency="BYN"):
-        c = CurrencyRates()
-        if currency == "BYN":
-            print(f"Balance: {self.balance:.2f} BYN")
+    @staticmethod
+    def Show_my_accounts():
+        accounts = bank.find_accounts_by_email(email_login)
+        if not accounts:
+            print("You have no accounts.")
         else:
-            try:
-                rate = c.get_rate("BYN", currency)
-                converted = self.balance * rate
-                print(f"Balance: {converted:.2f} {currency}")
-            except Exception as e:
-                print(f"Error converting balance: {e}")
+            for acc in accounts:
+                print(f"• {acc['account_number']} | {acc['currency']} | {acc['balance']:.2f} {acc['currency']}")
 
-    def deposit(self, amount, currency):
+    @staticmethod
+    def deposit(account_data, amount, currency_input, bank_instance):
         c = CurrencyRates()
         time_now = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
-        if currency != 'BYN':
+        if currency_input != account_data["currency"]:
             try:
-                rate_to_byn = c.get_rate(currency, 'BYN')
-                amount_byn = amount * rate_to_byn
+                rate = c.get_rate(currency_input, account_data["currency"])
+                amount_converted = amount * rate
             except Exception as e:
-                print(f"Ошибка для {currency}: {e}")
-                return
+                print(f"Ошибка конвертации {currency_input}: {e}")
+                return False
         else:
-            amount_byn = amount
-
-        self.balance += amount_byn
-        self.history.append(f"{time_now}, Deposited {amount} {currency} ({amount_byn:.2f} BYN)")
+            amount_converted = amount
+        new_balance = account_data["balance"] + amount_converted
+        history_entry = f"{time_now}, Deposited {amount} {currency_input} ({amount_converted:.2f} {account_data['currency']})"
+        bank_instance.update_account_balance(account_data["account_number"], new_balance, [history_entry])
         print("Deposit successful!")
+        return True
 
-    def withdraw(self, amount, currency):
+    @staticmethod
+    def withdraw(account_data, amount, currency_input, bank_instance):
         c = CurrencyRates()
         time_now = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
-        if currency != 'BYN':
+        if currency_input != account_data["currency"]:
             try:
-                rate_to_byn = c.get_rate(currency, 'BYN')
-                amount_byn = amount * rate_to_byn
+                rate = c.get_rate(currency_input, account_data["currency"])
+                amount_converted = amount * rate
             except Exception as e:
-                print(f"Ошибка для {currency}: {e}")
-                return
+                print(f"Ошибка конвертации {currency_input}: {e}")
+                return False
         else:
-            amount_byn = amount
-
-        if amount_byn > self.balance:
+            amount_converted = amount
+        if amount_converted > account_data["balance"]:
             print("Not enough funds.")
-            return
-
-        self.balance -= amount_byn
-        self.history.append(f"{time_now}, You withdrew {amount} {currency} ({amount_byn:.2f} BYN)")
+            return False
+        new_balance = account_data["balance"] - amount_converted
+        history_entry = f"{time_now}, Withdrawn {amount} {currency_input} ({amount_converted:.2f} {account_data['currency']})"
+        bank_instance.update_account_balance(account_data["account_number"], new_balance, [history_entry])
         print("Withdrawal successful!")
+        return True
 
     def belarus_currency_rates(self):
-        c = CurrencyRates()
-        cc = CurrencyCodes()
+        try:
+            url = "https://www.nbrb.by/api/exrates/rates?periodicity=0"
+            response = requests.get(url)
+            data = response.json()
 
-        print("=== КУРСЫ БЕЛОРУССКОГО РУБЛЯ ===")
-        print(f"Валюта: {cc.get_currency_name('BYN')} ({cc.get_symbol('BYN')})")
-        print(f"Актуально на: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
-        print()
+            print(f"\n📊 Курсы валют НБ РБ на {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+            print("=" * 45)
 
-        # Основные курсы
-        currencies = ['USD', 'EUR', 'RUB', 'PLN', 'UAH']
+            # Основные валюты
+            currencies = ['USD', 'EUR', 'RUB', 'PLN', 'UAH']
 
-        for curr in currencies:
-            try:
-                # Иностранная валюта к BYN
-                rate_to_byn = c.get_rate(curr, 'BYN')
-                # BYN к иностранной валюте
-                rate_from_byn = c.get_rate('BYN', curr)
+            for curr in currencies:
+                for item in data:
+                    if item['Cur_Abbreviation'] == curr:
+                        rate = item['Cur_OfficialRate'] / item['Cur_Scale']
+                        print(f"{curr}: {rate:.4f} BYN")
+                        break
 
-                print(f"1 {curr} = {rate_to_byn:.4f} BYN")
-                print(f"1 BYN = {rate_from_byn:.4f} {curr}")
-                print("-" * 30)
+        except Exception as e:
+            print(f"Ошибка: {e}")
 
-            except Exception as e:
-                print(f"Ошибка для {curr}: {e}")
+    @staticmethod
+    def find_account_by_account_number(acc_num, acc_file):
+        result = []
+        for acc in acc_file:
+            if acc['account_number'] == acc_num:
+                result.append(acc)
+        if len(result) == 0:
+            return None
+        else:
+            return result
+
 
 def uni_number_generation():
     return random.randint(1000000, 9999999)
@@ -323,13 +343,7 @@ def validate_password(password, name, second_name, DOB, phone_number, email_logi
 def personal_account():
     pass
 
-def Show_my_accounts():
-    accounts = bank.find_accounts_by_email(email_login)
-    if not accounts:
-        print("You have no accounts.")
-    else:
-        for acc in accounts:
-            print(f"• {acc['account_number']} | {acc['currency']} | {acc['balance']:.2f} {acc['currency']}")
+
 
 # ====================== ОСНОВНАЯ ЛОГИКА ======================
 bank = Bank()
@@ -367,7 +381,7 @@ elif choice == "login":
         print(f"Welcome, {client['name']} {client['second_name']}!")
 
         while True:
-            print("\n\n\n\n\n\n\n--- Account Menu ---")
+            print("\n\n--- Account Menu ---")
             print("1. Show my accounts")
             print("2. Create new account")
             print("3. Account replenishment")
@@ -379,7 +393,7 @@ elif choice == "login":
             ch = input("Choose: ")
 
             if ch == "1":
-                Show_my_accounts()
+                Account.Show_my_accounts()
 
             elif ch == "2":
                 if bank.count_accounts_by_email(email_login) == 3:
@@ -407,27 +421,38 @@ elif choice == "login":
                             print("✅ Account created successfully!")
 
 
-            elif ch == "3": # Пополнение счета res[0]['balance']
-                Show_my_accounts()
-                uni_account = bank.accounts
-                uni_client = bank.clients
-                uni_number = int(input('Which account do you want to top up? '))
-                currency = input("Enter currency (BYN/USD/EUR): ").upper()
-                sum = int(input("Enter your sum: "))
-                res = bank.find_account_by_account_number(uni_number)
-                if res == None:
-                    print("<UNK> Account does not exist.")
-                    continue
-                else:
-                    pass
-                    # Account.deposit(sum, currency)
 
+            elif ch == "3":  # Пополнение счета
+                Account.Show_my_accounts()
+                try:
+                    uni_number = int(input('Which account do you want to top up? '))
+                    currency = input("Enter currency (BYN/USD/EUR): ").upper()
+                    sum_amount = float(input("Enter your sum: "))
+                    account_data = bank.find_account_by_account_number(uni_number)
+                    if account_data and account_data["owner_email"] == email_login:
+                        Account.deposit(account_data, sum_amount, currency, bank)
+                    else:
+                        print("<UNK> Account does not exist or doesn't belong to you.")
+                except ValueError:
+                    print("Invalid input. Please enter numbers only.")
 
-            elif ch == "4": # Снять гроши
-                pass
+            elif ch == "4":  # Снятие денег
+                Account.Show_my_accounts()
+                try:
+                    uni_number = int(input('From which account do you want to withdraw? '))
+                    currency = input("Enter currency (BYN/USD/EUR): ").upper()
+                    sum_amount = float(input("Enter your sum: "))
+                    account_data = bank.find_account_by_account_number(uni_number)
+                    if account_data and account_data["owner_email"] == email_login:
+                        Account.withdraw(account_data, sum_amount, currency, bank)
+                    else:
+                        print("<UNK> Account does not exist or doesn't belong to you.")
+                except ValueError:
+                    print("Invalid input. Please enter numbers only.")
 
             elif ch == "5": # Курсы валют в БУН
-                pass
+                account_temp = Account(0, "", "BYN")
+                account_temp.belarus_currency_rates()
 
             elif ch == "6":
                 print("Goodbye!")
